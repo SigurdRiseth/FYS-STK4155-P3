@@ -1,5 +1,5 @@
 [project]
-name = "fys-stk4155-p0"
+name = "fys-stk4155-p3"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-fys-stk4155-p0 = "fys_stk4155_p0:main"
+fys-stk4155-p3 = "fys_stk4155_p3:main"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
@@ -60,7 +60,7 @@ warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=fys_stk4155_p0 --cov-report=term-missing"
+addopts = "--cov=fys_stk4155_p3 --cov-report=term-missing"
 
 [tool.coverage.run]
 source = ["src"]

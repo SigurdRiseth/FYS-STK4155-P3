@@ -1,6 +1,6 @@
 import pytest
 
-from fys_stk4155_p0 import main
+from fys_stk4155_p3 import main
 
 
 def test_main_prints_greeting(capsys: pytest.CaptureFixture[str]) -> None:
