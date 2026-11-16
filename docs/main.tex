@@ -1,0 +1,63 @@
+\documentclass[a4paper]{IEEEtran}
+
+\usepackage[
+    backend=biber,
+    style=ieee
+]{biblatex}
+\addbibresource{references.bib}
+
+\usepackage{amsmath,amssymb,amsfonts, bm}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{cleveref}
+\usepackage{booktabs}
+
+\begin{document}
+
+\title{Network Intrusion Detection}
+
+\author{
+    \IEEEauthorblockN{Sigurd Riseth}\\
+    \IEEEauthorblockA{
+        \textit{Department of Physics}\\
+        \textit{University of Oslo}\\
+        Oslo, Norway \\
+        sigurri@uio.no
+    }
+}
+
+\maketitle
+
+\begin{abstract}
+...
+\end{abstract}
+
+\begin{IEEEkeywords}
+keyword1, keyword2, keyword3
+\end{IEEEkeywords}
+
+%\tableofcontents
+
+\section{Introduction}
+
+How effectively can different machine learning algorithms distinguish between
+legitimate network traffic and malicious activity?
+
+Dataset: CIC-IDS2017.
+
+We compare the performance of logistic regression, random forest, XGBoost, and FFNN.
+
+We investigate binary versus multi-class classification, class imbalance, precision-recall
+for attack classes, false positive rates, feature importance, training time and computational
+requirements.
+
+Accuracy is potentially misleading in intrusion detection. A model that achieves
+high accuracy but fails to detect rare attacks is not useful in practice.
+
+\section{Methods}
+
+\printbibliography
+
+\appendix
+
+\end{document}

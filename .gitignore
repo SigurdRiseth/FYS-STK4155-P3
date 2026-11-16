@@ -29,3 +29,17 @@ htmlcov/
 data/*
 !data/.gitkeep
 !data/README.md
+
+# LaTeX build files
+docs/main.pdf
+*.aux
+*.bcf
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.bbl
+*.blg
