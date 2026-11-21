@@ -6,4 +6,8 @@ Standalone, runnable entry points that orchestrate the package in
 package under `src/` so it's importable and testable, and keep only
 argument parsing / wiring here.
 
-Run with `uv run python scripts/<name>.py`.
+After the folder `MachineLearningCVE` is downloaded into `data/raw`, you can merge all its content into a single CSV by running the following script:
+
+```bash
+uv run scripts/merge_data.py
+```
