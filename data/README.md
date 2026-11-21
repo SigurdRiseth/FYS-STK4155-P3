@@ -15,3 +15,5 @@ data/
 If a dataset must be versioned (e.g. it's small and not reproducible any
 other way), document its provenance here and commit it explicitly with
 `git add -f`.
+
+To avoid third-party datasets which might have been tampered with, posing a threat to both security and the integrity of the model, we manually download the CSVs from the [Canadian Institute for Cybersecurity (CIC)](https://cicresearch.ca/CICDataset/CIC-IDS-2017/browse.php?t=1795260951707).
