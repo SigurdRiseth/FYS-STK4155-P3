@@ -1,13 +1,13 @@
 # FYS-STK4155-P3
 
-> Template repository for academic ML projects (FYS-STK4155 and similar).
-> Replace this description with the project's own.
+Binary classification on CICIDS2017 using logistic regression, feed-forward neural networks, and random forests.
+Coursework for FYS-STK4155 at the University of Oslo (UiO).
 
 ## Project structure
 
 ```
 .
-├── src/fys_stk4155_p0/   # importable package — all reusable logic lives here
+├── src/fys_stk4155_p3/   # importable package — all reusable logic lives here
 ├── tests/                # pytest test suite, mirrors src/ structure
 ├── scripts/              # thin runnable entry points (data download, experiments)
 ├── notebooks/            # exploratory Jupyter notebooks (outputs stripped on commit)
@@ -30,11 +30,11 @@ uv run pre-commit install  # enable git hooks (lint, format, nbstripout, mypy, g
 
 | Task | Command |
 |---|---|
-| Run tests (with coverage) | `make test` / `uv run pytest` |
-| Lint | `make lint` / `uv run ruff check .` |
-| Format | `make format` / `uv run ruff format .` |
-| Type check | `make typecheck` / `uv run mypy` |
-| Everything | `make check` |
+| Run tests (with coverage)         | `make test` |
+| Lint                              | `make lint` |
+| Format                            | `make format` |
+| Type check                        | `make typecheck` |
+| Everything                        | `make check` |
 | Run all pre-commit hooks manually | `uv run pre-commit run --all-files` |
 
 CI (`.github/workflows/ci.yml`) runs `uv sync --locked` (fails if `uv.lock`
