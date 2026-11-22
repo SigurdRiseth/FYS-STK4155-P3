@@ -1,0 +1,150 @@
+{
+  "input_shape": [
+    2830743,
+    79
+  ],
+  "output_shape": [
+    2493834,
+    68
+  ],
+  "memory_mb_before": 1806.8,
+  "memory_mb_after": 740.9,
+  "steps": [
+    {
+      "step": "clean_column_names",
+      "rows_before": 2830743,
+      "rows_after": 2830743,
+      "rows_dropped": 0,
+      "columns_dropped": []
+    },
+    {
+      "step": "normalize_labels",
+      "rows_before": 2830743,
+      "rows_after": 2830743,
+      "rows_dropped": 0,
+      "columns_dropped": []
+    },
+    {
+      "step": "drop_constant_columns",
+      "rows_before": 2830743,
+      "rows_after": 2830743,
+      "rows_dropped": 0,
+      "columns_dropped": [
+        "Bwd PSH Flags",
+        "Bwd URG Flags",
+        "Fwd Avg Bytes/Bulk",
+        "Fwd Avg Packets/Bulk",
+        "Fwd Avg Bulk Rate",
+        "Bwd Avg Bytes/Bulk",
+        "Bwd Avg Packets/Bulk",
+        "Bwd Avg Bulk Rate"
+      ]
+    },
+    {
+      "step": "drop_duplicate_columns",
+      "rows_before": 2830743,
+      "rows_after": 2830743,
+      "rows_dropped": 0,
+      "columns_dropped": [
+        "SYN Flag Count",
+        "CWE Flag Count",
+        "Fwd Header Length.1",
+        "Subflow Fwd Packets",
+        "Subflow Bwd Packets"
+      ]
+    },
+    {
+      "step": "replace_infinite_values",
+      "rows_before": 2830743,
+      "rows_after": 2830743,
+      "rows_dropped": 0,
+      "columns_dropped": []
+    },
+    {
+      "step": "drop_missing_rows",
+      "rows_before": 2830743,
+      "rows_after": 2827876,
+      "rows_dropped": 2867,
+      "columns_dropped": []
+    },
+    {
+      "step": "drop_negative_rows",
+      "rows_before": 2827876,
+      "rows_after": 2824951,
+      "rows_dropped": 2925,
+      "columns_dropped": []
+    },
+    {
+      "step": "downcast_numeric_columns",
+      "rows_before": 2824951,
+      "rows_after": 2824951,
+      "rows_dropped": 0,
+      "columns_dropped": []
+    },
+    {
+      "step": "drop_conflicting_duplicates",
+      "rows_before": 2824951,
+      "rows_after": 2818161,
+      "rows_dropped": 6790,
+      "columns_dropped": []
+    },
+    {
+      "step": "drop_duplicate_rows",
+      "rows_before": 2818161,
+      "rows_after": 2493834,
+      "rows_dropped": 324327,
+      "columns_dropped": []
+    },
+    {
+      "step": "add_targets",
+      "rows_before": 2493834,
+      "rows_after": 2493834,
+      "rows_dropped": 0,
+      "columns_dropped": []
+    }
+  ],
+  "label_counts_before": {
+    "BENIGN": 2273097,
+    "DoS Hulk": 231073,
+    "PortScan": 158930,
+    "DDoS": 128027,
+    "DoS GoldenEye": 10293,
+    "FTP-Patator": 7938,
+    "SSH-Patator": 5897,
+    "DoS slowloris": 5796,
+    "DoS Slowhttptest": 5499,
+    "Bot": 1966,
+    "Web Attack - Brute Force": 1507,
+    "Web Attack - XSS": 652,
+    "Infiltration": 36,
+    "Web Attack - Sql Injection": 21,
+    "Heartbleed": 11
+  },
+  "label_counts_after": {
+    "BENIGN": 2069004,
+    "DoS Hulk": 172539,
+    "DDoS": 127992,
+    "PortScan": 90130,
+    "DoS GoldenEye": 10281,
+    "FTP-Patator": 5927,
+    "DoS slowloris": 5383,
+    "DoS Slowhttptest": 5228,
+    "SSH-Patator": 3217,
+    "Bot": 1948,
+    "Web Attack - Brute Force": 1470,
+    "Web Attack - XSS": 652,
+    "Infiltration": 35,
+    "Web Attack - Sql Injection": 21,
+    "Heartbleed": 7
+  },
+  "attack_family_counts": {
+    "BENIGN": 2069004,
+    "DoS": 193431,
+    "DDoS": 127992,
+    "PortScan": 90130,
+    "Brute Force": 9144,
+    "Web Attack": 2143,
+    "Bot": 1948,
+    "Rare": 42
+  }
+}

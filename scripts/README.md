@@ -6,8 +6,13 @@ Standalone, runnable entry points that orchestrate the package in
 package under `src/` so it's importable and testable, and keep only
 argument parsing / wiring here.
 
-After the folder `MachineLearningCVE` is downloaded into `data/raw`, you can merge all its content into a single CSV by running the following script:
+After the folder `MachineLearningCVE` is downloaded into `data/raw`, you can merge and clean all its content by running the following script:
 
 ```bash
-uv run scripts/merge_data.py
+uv run scripts/prepare_data.py
 ```
+
+This writes two files to `data/processed/`:
+
+- `cicids2017_raw.parquet`: all CSV files merged, untouched (used by the EDA notebook).
+- `cicids2017_clean.parquet`: the output of `fys_stk4155_p3.data.cleaning.clean`.
