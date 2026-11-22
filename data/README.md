@@ -17,3 +17,7 @@ other way), document its provenance here and commit it explicitly with
 `git add -f`.
 
 To avoid third-party datasets which might have been tampered with, posing a threat to both security and the integrity of the model, we manually download the CSVs from the [Canadian Institute for Cybersecurity (CIC)](https://cicresearch.ca/CICDataset/CIC-IDS-2017/browse.php?t=1795260951707).
+
+We use the MachineLearningCVE-folder in `raw/` as it has stripped out six columns such as `Timestamp`, `SourceIP`, `DestinationIP`, so machine learning models cant just memorize specific test-bed addresses that launch attacks, but rather learn behavioural traffic patterns.
+
+For processing the raw data, refer to `scripts/README.md`, where we explain the scripts which transform the raw CSV to a single parquet file.
