@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test check clean
+.PHONY: install lint format typecheck test check notebook clean
 
 install:
 	uv sync
@@ -17,6 +17,9 @@ test:
 	uv run pytest
 
 check: lint typecheck test
+
+notebook:
+	uv run jupyter lab
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
