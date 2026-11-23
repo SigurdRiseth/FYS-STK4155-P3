@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 authors = [
-    { name = "Sigurd Riseth", email = "sigurd.riseth@gmail.com" }
+    { name = "Sigurd Riseth", email = "sigurri@uio.no" }
 ]
 requires-python = ">=3.12"
 dependencies = [
