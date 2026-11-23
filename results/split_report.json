@@ -1,0 +1,79 @@
+{
+  "seed": 42,
+  "train_size": 0.7,
+  "val_size": 0.15,
+  "test_size": 0.15,
+  "target_column": "Label",
+  "input_rows": 2493834,
+  "partitions": {
+    "train": {
+      "rows": 1745683,
+      "fraction": 0.7,
+      "label_counts": {
+        "BENIGN": 1448302,
+        "DoS Hulk": 120777,
+        "DDoS": 89594,
+        "PortScan": 63091,
+        "DoS GoldenEye": 7197,
+        "FTP-Patator": 4149,
+        "DoS slowloris": 3768,
+        "DoS Slowhttptest": 3660,
+        "SSH-Patator": 2251,
+        "Bot": 1364,
+        "Web Attack - Brute Force": 1029,
+        "Web Attack - XSS": 456,
+        "Infiltration": 25,
+        "Web Attack - Sql Injection": 15,
+        "Heartbleed": 5
+      }
+    },
+    "val": {
+      "rows": 374075,
+      "fraction": 0.15,
+      "label_counts": {
+        "BENIGN": 310351,
+        "DoS Hulk": 25881,
+        "DDoS": 19199,
+        "PortScan": 13519,
+        "DoS GoldenEye": 1542,
+        "FTP-Patator": 889,
+        "DoS slowloris": 808,
+        "DoS Slowhttptest": 784,
+        "SSH-Patator": 483,
+        "Bot": 292,
+        "Web Attack - Brute Force": 220,
+        "Web Attack - XSS": 98,
+        "Infiltration": 5,
+        "Web Attack - Sql Injection": 3,
+        "Heartbleed": 1
+      }
+    },
+    "test": {
+      "rows": 374076,
+      "fraction": 0.15,
+      "label_counts": {
+        "BENIGN": 310351,
+        "DoS Hulk": 25881,
+        "DDoS": 19199,
+        "PortScan": 13520,
+        "DoS GoldenEye": 1542,
+        "FTP-Patator": 889,
+        "DoS slowloris": 807,
+        "DoS Slowhttptest": 784,
+        "SSH-Patator": 483,
+        "Bot": 292,
+        "Web Attack - Brute Force": 221,
+        "Web Attack - XSS": 98,
+        "Infiltration": 5,
+        "Web Attack - Sql Injection": 3,
+        "Heartbleed": 1
+      }
+    }
+  },
+  "git_commit": "e09b062820504b3fa867d411739c19a13d069e6d-dirty",
+  "package_versions": {
+    "numpy": "2.5.2",
+    "pandas": "3.0.5",
+    "scikit-learn": "1.9.0"
+  }
+}

@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test check notebook clean
+.PHONY: install lint format typecheck test check notebook data clean
 
 install:
 	uv sync
@@ -20,6 +20,11 @@ check: lint typecheck test
 
 notebook:
 	uv run jupyter lab
+
+# Merge, clean, and split the dataset. Refuses to overwrite existing splits;
+# run `uv run python scripts/prepare_data.py --force` to regenerate them.
+data:
+	uv run python scripts/prepare_data.py
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
