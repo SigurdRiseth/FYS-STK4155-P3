@@ -1,7 +1,5 @@
 """Classification metrics: accuracy, confusion matrix, precision, recall and F1 score.
 
-The regression metrics (MSE and R^2) are imported from project 1, ``fys_stk4155_p1.metrics``.
-
 All functions take class labels, not logits or one-hot vectors. For the network output,
 convert with ``np.argmax(network.predict(X), axis=1)``, and likewise for one-hot targets.
 """

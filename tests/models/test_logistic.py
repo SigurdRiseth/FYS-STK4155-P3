@@ -8,10 +8,10 @@ Role: Wrote most of the tests; adapted and checked by the author.
 
 import numpy as np
 import pytest
-from fys_stk4155_p1.optimization.optimizers import Plain
 
 from fys_stk4155_p3.models.logistic import LogisticRegression
 from fys_stk4155_p3.nn.layers import Dense
+from fys_stk4155_p3.optimization.optimizers import Plain
 
 N_PER_CLASS = 10
 LABELS = {2: np.array(["cat", "dog"]), 3: np.array(["cat", "dog", "fox"])}

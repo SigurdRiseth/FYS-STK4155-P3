@@ -5,12 +5,6 @@ from collections.abc import Callable
 from typing import Literal
 
 import numpy as np
-from fys_stk4155_p1.optimization.optimizers import Optimizer
-from fys_stk4155_p1.optimization.schedules import (
-    constant_schedule,
-    exponential_decay,
-    time_based_decay,
-)
 from numpy.typing import NDArray
 
 from fys_stk4155_p3.nn.layers import Dense, Layer
@@ -19,6 +13,12 @@ from fys_stk4155_p3.nn.losses import (
     Regularization,
     regularization_gradient,
     regularization_penalty,
+)
+from fys_stk4155_p3.optimization.optimizers import Optimizer
+from fys_stk4155_p3.optimization.schedules import (
+    constant_schedule,
+    exponential_decay,
+    time_based_decay,
 )
 
 Schedule = Literal["constant", "time_based", "exponential"]

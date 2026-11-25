@@ -12,7 +12,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from fys_stk4155_p1.optimization.optimizers import Plain
 
 from fys_stk4155_p3.nn.activations import Activation, LeakyReLU, ReLU, Sigmoid
 from fys_stk4155_p3.nn.layers import Dense, Layer, Linear
@@ -24,6 +23,7 @@ from fys_stk4155_p3.nn.losses import (
     Regularization,
 )
 from fys_stk4155_p3.nn.network import FFNN
+from fys_stk4155_p3.optimization.optimizers import Plain
 
 jax.config.update("jax_enable_x64", True)
 

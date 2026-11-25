@@ -12,13 +12,13 @@ Role: Wrote the module from the author's specification; tested by the author.
 """
 
 import numpy as np
-from fys_stk4155_p1.optimization.optimizers import Optimizer
 from numpy.typing import NDArray
 
 from fys_stk4155_p3.nn.activations import sigmoid
 from fys_stk4155_p3.nn.layers import Dense, Linear
 from fys_stk4155_p3.nn.losses import BinaryCrossEntropy, CategoricalCrossEntropy, Regularization
 from fys_stk4155_p3.nn.network import FFNN
+from fys_stk4155_p3.optimization.optimizers import Optimizer
 
 
 def _softmax(logits: NDArray[np.float64]) -> NDArray[np.float64]:
