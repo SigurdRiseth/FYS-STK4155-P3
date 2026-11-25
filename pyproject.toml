@@ -9,6 +9,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "fys-stk4155-p1",
     "matplotlib>=3.11.1",
     "numpy>=2.5.2",
     "pandas>=3.0.5",
@@ -27,6 +28,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "ipykernel>=7.3.0",
+    "jax>=0.12.1",
     "jupyter>=1.1.1",
     "mypy>=2.3.1",
     "nbstripout>=0.9.1",
@@ -68,3 +70,6 @@ addopts = "--cov=fys_stk4155_p3 --cov-report=term-missing"
 [tool.coverage.run]
 source = ["src"]
 branch = true
+
+[tool.uv.sources]
+fys-stk4155-p1 = { git = "https://github.com/SigurdRiseth/FYS-STK4155-P1", rev = "v0.1.0" }
