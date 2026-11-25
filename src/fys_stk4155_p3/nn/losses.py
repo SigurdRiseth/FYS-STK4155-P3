@@ -4,10 +4,17 @@ The losses are available both as plain functions and as ``Loss`` subclasses. The
 functions are convenient for testing; the classes give the network a single interface,
 ``loss(y_true, output)`` and ``loss.derivative(y_true, output)``, whichever loss it uses.
 
+Every loss takes optional per-sample weights w_i. The weighted loss is the mean of
+w_i * l_i over the samples, divided by the number of samples n and not by sum(w_i). With
+unit weights this is exactly the unweighted loss, and weights that average to one over
+the training set (such as balanced class weights) keep the loss on the same scale, so
+learning rates and penalty strengths carry over.
+
 LLM-assisted
 ------------
 Tool: Claude (claude-opus-5-5, Claude Code CLI, November 2026)
-Role: Wrapped the author's loss functions in the ``Loss`` classes.
+Role: Wrapped the author's loss functions in the ``Loss`` classes. Added the per-sample
+    weights (project 3).
 """
 
 from abc import ABC, abstractmethod
@@ -41,13 +48,36 @@ def _validate_targets(
     return y_true, y_pred
 
 
+def _validate_sample_weight(
+    sample_weight: NDArray[np.float64] | None, n_samples: int
+) -> NDArray[np.float64] | None:
+    """Check per-sample weights and reshape them to (n_samples, 1) for broadcasting.
+
+    Raises:
+        ValueError: If the weights do not have shape (n_samples,), or are negative or not
+            finite.
+    """
+    if sample_weight is None:
+        return None
+    weights = np.asarray(sample_weight, dtype=np.float64)
+    if weights.shape != (n_samples,):
+        raise ValueError(f"sample_weight must have shape ({n_samples},), got {weights.shape}.")
+    if not np.all(np.isfinite(weights)) or np.any(weights < 0):
+        raise ValueError("sample_weight must be finite and non-negative.")
+    return weights.reshape(-1, 1)
+
+
 def _log_softmax(logits: NDArray[np.float64]) -> NDArray[np.float64]:
     """Row-wise log-softmax, shifted by the row maximum so that exp does not overflow."""
     shifted = logits - np.max(logits, axis=1, keepdims=True)
     return shifted - np.log(np.sum(np.exp(shifted), axis=1, keepdims=True))
 
 
-def mean_squared_error(y_true: NDArray[np.float64], y_pred: NDArray[np.float64]) -> np.float64:
+def mean_squared_error(
+    y_true: NDArray[np.float64],
+    y_pred: NDArray[np.float64],
+    sample_weight: NDArray[np.float64] | None = None,
+) -> np.float64:
     """Mean squared error between the true and predicted targets.
 
     Regularization is handled separately by ``regularization_penalty``, since it depends
@@ -56,16 +86,23 @@ def mean_squared_error(y_true: NDArray[np.float64], y_pred: NDArray[np.float64])
     Args:
         y_true: True target values, shape (n_samples,) or (n_samples, n_outputs).
         y_pred: Predicted target values, same shape as ``y_true``.
+        sample_weight: Optional non-negative weight per sample, shape (n_samples,).
 
     Returns:
         The mean squared error.
     """
     y_true, y_pred = _validate_targets(y_true, y_pred)
-    return np.float64(np.mean((y_pred - y_true) ** 2))
+    squared = (y_pred - y_true) ** 2
+    weights = _validate_sample_weight(sample_weight, squared.shape[0])
+    if weights is not None:
+        squared = weights * squared.reshape(squared.shape[0], -1)
+    return np.float64(np.mean(squared))
 
 
 def mean_squared_error_derivative(
-    y_true: NDArray[np.float64], y_pred: NDArray[np.float64]
+    y_true: NDArray[np.float64],
+    y_pred: NDArray[np.float64],
+    sample_weight: NDArray[np.float64] | None = None,
 ) -> NDArray[np.float64]:
     """Gradient of ``mean_squared_error`` with respect to the predictions.
 
@@ -74,15 +111,24 @@ def mean_squared_error_derivative(
     Args:
         y_true: True target values, shape (n_samples,) or (n_samples, n_outputs).
         y_pred: Predicted target values, same shape as ``y_true``.
+        sample_weight: Optional non-negative weight per sample, shape (n_samples,).
 
     Returns:
         dC/dy_pred, same shape as ``y_pred``.
     """
     y_true, y_pred = _validate_targets(y_true, y_pred)
-    return 2 * (y_pred - y_true) / y_true.size
+    gradient = 2 * (y_pred - y_true) / y_true.size
+    weights = _validate_sample_weight(sample_weight, gradient.shape[0])
+    if weights is not None:
+        gradient = (weights * gradient.reshape(gradient.shape[0], -1)).reshape(gradient.shape)
+    return gradient
 
 
-def binary_cross_entropy(y_true: NDArray[np.float64], logits: NDArray[np.float64]) -> np.float64:
+def binary_cross_entropy(
+    y_true: NDArray[np.float64],
+    logits: NDArray[np.float64],
+    sample_weight: NDArray[np.float64] | None = None,
+) -> np.float64:
     """Binary cross entropy loss, computed from logits.
 
     Follows Equation (5.14) of Hjorth-Jensen (2026), but averaged over the samples
@@ -93,16 +139,23 @@ def binary_cross_entropy(y_true: NDArray[np.float64], logits: NDArray[np.float64
     Args:
         y_true: True binary labels in {0, 1}, shape (n_samples,) or (n_samples, 1).
         logits: Predicted logits z (pre-sigmoid outputs), same shape as ``y_true``.
+        sample_weight: Optional non-negative weight per sample, shape (n_samples,).
 
     Returns:
         The mean binary cross entropy loss.
     """
     y_true, logits = _validate_targets(y_true, logits)
-    return np.float64(-np.mean(y_true * logits - np.logaddexp(0, logits)))
+    losses = np.logaddexp(0, logits) - y_true * logits
+    weights = _validate_sample_weight(sample_weight, losses.shape[0])
+    if weights is not None:
+        losses = weights * losses.reshape(losses.shape[0], -1)
+    return np.float64(np.mean(losses))
 
 
 def binary_cross_entropy_derivative(
-    y_true: NDArray[np.float64], logits: NDArray[np.float64]
+    y_true: NDArray[np.float64],
+    logits: NDArray[np.float64],
+    sample_weight: NDArray[np.float64] | None = None,
 ) -> NDArray[np.float64]:
     """Gradient of the mean binary cross entropy with respect to the logits.
 
@@ -113,16 +166,23 @@ def binary_cross_entropy_derivative(
     Args:
         y_true: True binary labels in {0, 1}, shape (n_samples,) or (n_samples, 1).
         logits: Predicted logits z (pre-sigmoid outputs), same shape as ``y_true``.
+        sample_weight: Optional non-negative weight per sample, shape (n_samples,).
 
     Returns:
         dC/dz, same shape as ``logits``.
     """
     y_true, logits = _validate_targets(y_true, logits)
-    return (sigmoid(logits) - y_true) / y_true.size
+    gradient = (sigmoid(logits) - y_true) / y_true.size
+    weights = _validate_sample_weight(sample_weight, gradient.shape[0])
+    if weights is not None:
+        gradient = (weights * gradient.reshape(gradient.shape[0], -1)).reshape(gradient.shape)
+    return gradient
 
 
 def categorical_cross_entropy(
-    y_true: NDArray[np.float64], logits: NDArray[np.float64]
+    y_true: NDArray[np.float64],
+    logits: NDArray[np.float64],
+    sample_weight: NDArray[np.float64] | None = None,
 ) -> np.float64:
     """Categorical cross entropy loss, computed from logits.
 
@@ -133,16 +193,23 @@ def categorical_cross_entropy(
     Args:
         y_true: One-hot encoded targets, shape (n_samples, n_classes).
         logits: Predicted logits (pre-softmax outputs), same shape as ``y_true``.
+        sample_weight: Optional non-negative weight per sample, shape (n_samples,).
 
     Returns:
         The mean categorical cross entropy loss.
     """
     y_true, logits = _validate_targets(y_true, logits)
-    return np.float64(-np.mean(np.sum(y_true * _log_softmax(logits), axis=1)))
+    losses = -np.sum(y_true * _log_softmax(logits), axis=1, keepdims=True)
+    weights = _validate_sample_weight(sample_weight, losses.shape[0])
+    if weights is not None:
+        losses = weights * losses
+    return np.float64(np.mean(losses))
 
 
 def categorical_cross_entropy_derivative(
-    y_true: NDArray[np.float64], logits: NDArray[np.float64]
+    y_true: NDArray[np.float64],
+    logits: NDArray[np.float64],
+    sample_weight: NDArray[np.float64] | None = None,
 ) -> NDArray[np.float64]:
     """Gradient of the mean categorical cross entropy with respect to the logits.
 
@@ -152,12 +219,17 @@ def categorical_cross_entropy_derivative(
     Args:
         y_true: One-hot encoded targets, shape (n_samples, n_classes).
         logits: Predicted logits (pre-softmax outputs), same shape as ``y_true``.
+        sample_weight: Optional non-negative weight per sample, shape (n_samples,).
 
     Returns:
         dC/dz, same shape as ``logits``.
     """
     y_true, logits = _validate_targets(y_true, logits)
-    return (np.exp(_log_softmax(logits)) - y_true) / logits.shape[0]
+    gradient = (np.exp(_log_softmax(logits)) - y_true) / logits.shape[0]
+    weights = _validate_sample_weight(sample_weight, gradient.shape[0])
+    if weights is not None:
+        gradient = weights * gradient
+    return gradient
 
 
 class Loss(ABC):
@@ -168,12 +240,20 @@ class Loss(ABC):
     """
 
     @abstractmethod
-    def __call__(self, y_true: NDArray[np.float64], output: NDArray[np.float64]) -> np.float64:
-        """Compute the mean loss over the samples."""
+    def __call__(
+        self,
+        y_true: NDArray[np.float64],
+        output: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
+    ) -> np.float64:
+        """Compute the (weighted) mean loss over the samples."""
 
     @abstractmethod
     def derivative(
-        self, y_true: NDArray[np.float64], output: NDArray[np.float64]
+        self,
+        y_true: NDArray[np.float64],
+        output: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
     ) -> NDArray[np.float64]:
         """Compute dC/d(output), same shape as ``output``."""
 
@@ -181,13 +261,21 @@ class Loss(ABC):
 class MeanSquaredError(Loss):
     """Mean squared error, for regression with a linear output layer."""
 
-    def __call__(self, y_true: NDArray[np.float64], output: NDArray[np.float64]) -> np.float64:
-        return mean_squared_error(y_true, output)
+    def __call__(
+        self,
+        y_true: NDArray[np.float64],
+        output: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
+    ) -> np.float64:
+        return mean_squared_error(y_true, output, sample_weight)
 
     def derivative(
-        self, y_true: NDArray[np.float64], output: NDArray[np.float64]
+        self,
+        y_true: NDArray[np.float64],
+        output: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
     ) -> NDArray[np.float64]:
-        return mean_squared_error_derivative(y_true, output)
+        return mean_squared_error_derivative(y_true, output, sample_weight)
 
 
 class BinaryCrossEntropy(Loss):
@@ -196,13 +284,21 @@ class BinaryCrossEntropy(Loss):
     The output layer must be linear: the sigmoid is part of the loss, not the network.
     """
 
-    def __call__(self, y_true: NDArray[np.float64], output: NDArray[np.float64]) -> np.float64:
-        return binary_cross_entropy(y_true, output)
+    def __call__(
+        self,
+        y_true: NDArray[np.float64],
+        output: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
+    ) -> np.float64:
+        return binary_cross_entropy(y_true, output, sample_weight)
 
     def derivative(
-        self, y_true: NDArray[np.float64], output: NDArray[np.float64]
+        self,
+        y_true: NDArray[np.float64],
+        output: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
     ) -> NDArray[np.float64]:
-        return binary_cross_entropy_derivative(y_true, output)
+        return binary_cross_entropy_derivative(y_true, output, sample_weight)
 
 
 class CategoricalCrossEntropy(Loss):
@@ -211,13 +307,21 @@ class CategoricalCrossEntropy(Loss):
     The output layer must be linear: the softmax is part of the loss, not the network.
     """
 
-    def __call__(self, y_true: NDArray[np.float64], output: NDArray[np.float64]) -> np.float64:
-        return categorical_cross_entropy(y_true, output)
+    def __call__(
+        self,
+        y_true: NDArray[np.float64],
+        output: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
+    ) -> np.float64:
+        return categorical_cross_entropy(y_true, output, sample_weight)
 
     def derivative(
-        self, y_true: NDArray[np.float64], output: NDArray[np.float64]
+        self,
+        y_true: NDArray[np.float64],
+        output: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
     ) -> NDArray[np.float64]:
-        return categorical_cross_entropy_derivative(y_true, output)
+        return categorical_cross_entropy_derivative(y_true, output, sample_weight)
 
 
 Regularization = Literal["none", "l1", "l2"]

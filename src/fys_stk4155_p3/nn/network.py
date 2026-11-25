@@ -31,10 +31,29 @@ _SCHEDULES: dict[Schedule, Callable[[float, float], Callable[[int], float]]] = {
 }
 
 
+# (X_val, y_val) or (X_val, y_val, sample_weight_val)
+ValidationData = (
+    tuple[NDArray[np.float64], NDArray[np.float64]]
+    | tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64] | None]
+)
+
+
 def _as_2d(array: NDArray[np.float64]) -> NDArray[np.float64]:
     """Convert to a float array, turning shape (n_samples,) into (n_samples, 1)."""
     array = np.asarray(array, dtype=np.float64)
     return array.reshape(-1, 1) if array.ndim == 1 else array
+
+
+def _as_weights(
+    sample_weight: NDArray[np.float64] | None, n_samples: int, name: str
+) -> NDArray[np.float64] | None:
+    """Convert per-sample weights to a float array and check that there is one per sample."""
+    if sample_weight is None:
+        return None
+    weights = np.asarray(sample_weight, dtype=np.float64)
+    if weights.shape != (n_samples,):
+        raise ValueError(f"{name} must have shape ({n_samples},), got {weights.shape}.")
+    return weights
 
 
 class FFNN:
@@ -120,7 +139,12 @@ class FFNN:
             a = layer.forward(a)
         return a
 
-    def _backward(self, y_true: NDArray[np.float64], output: NDArray[np.float64]) -> None:
+    def _backward(
+        self,
+        y_true: NDArray[np.float64],
+        output: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
+    ) -> None:
         """Backpropagate the loss gradient through all layers.
 
         Must follow a call to ``_forward``. Afterwards, each Dense layer holds dC/dW and
@@ -130,8 +154,9 @@ class FFNN:
         Args:
             y_true: True targets, same shape as ``output``.
             output: Network output from the preceding ``_forward`` call.
+            sample_weight: Optional weight per sample, shape (n_samples,).
         """
-        dvalues = self.loss.derivative(y_true, output)
+        dvalues = self.loss.derivative(y_true, output, sample_weight)
         for layer in reversed(self.layers):
             dvalues = layer.backward(dvalues)
 
@@ -154,21 +179,35 @@ class FFNN:
             layer.weights = weight_optimizer.step(layer.weights, dweights)
             layer.biases = bias_optimizer.step(layer.biases, layer.dbiases)
 
-    def cost(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> np.float64:
-        """Compute the cost, the mean loss plus the regularization penalty.
+    @property
+    def n_parameters(self) -> int:
+        """Number of trainable parameters, the weights and biases of all Dense layers."""
+        return sum(layer.weights.size + layer.biases.size for layer in self._dense_layers)
+
+    def _penalty(self) -> np.float64:
+        """Regularization penalty on the current weights."""
+        return regularization_penalty(
+            [layer.weights for layer in self._dense_layers], self.regularization, self.lambda_
+        )
+
+    def cost(
+        self,
+        X: NDArray[np.float64],
+        y: NDArray[np.float64],
+        sample_weight: NDArray[np.float64] | None = None,
+    ) -> np.float64:
+        """Compute the cost, the (weighted) mean loss plus the regularization penalty.
 
         Args:
             X: Input data, shape (n_samples,) or (n_samples, n_features).
             y: Targets, shape (n_samples,) or (n_samples, n_outputs).
+            sample_weight: Optional non-negative weight per sample, shape (n_samples,).
 
         Returns:
             The cost on the given data.
         """
         output = self._forward(_as_2d(X))
-        penalty = regularization_penalty(
-            [layer.weights for layer in self._dense_layers], self.regularization, self.lambda_
-        )
-        return np.float64(self.loss(_as_2d(y), output) + penalty)
+        return np.float64(self.loss(_as_2d(y), output, sample_weight) + self._penalty())
 
     def fit(
         self,
@@ -176,8 +215,9 @@ class FFNN:
         y: NDArray[np.float64],
         epochs: int = 100,
         batch_size: int | None = None,
-        validation_data: tuple[NDArray[np.float64], NDArray[np.float64]] | None = None,
+        validation_data: ValidationData | None = None,
         patience: int | None = None,
+        sample_weight: NDArray[np.float64] | None = None,
     ) -> list[float]:
         """Train the network with (stochastic) gradient descent.
 
@@ -187,9 +227,17 @@ class FFNN:
         current weights, with fresh optimizer state and a restarted learning rate
         schedule.
 
+        The training cost recorded for each epoch is the running mean of the minibatch
+        costs (loss plus penalty) taken during that epoch, the same as the training loss
+        Keras reports. It costs no extra forward pass, which matters for large datasets,
+        but lags behind the cost at the end of the epoch since the weights change during
+        it. With full-batch training it is the cost before the epoch's single step.
+
         If ``validation_data`` is given, the cost on it is recorded after each epoch in
         ``validation_history``, which is reset at the start of every call. The validation
-        data is never used to update the weights.
+        data is never used to update the weights. A third element in ``validation_data``
+        weights the validation samples, e.g. with the same class weights as the training
+        data so that early stopping tracks the cost being minimized.
 
         With ``patience`` set, training stops early once the validation cost has not
         improved for ``patience`` epochs in a row, and the weights from the epoch with
@@ -202,24 +250,29 @@ class FFNN:
             y: Targets, shape (n_samples,) or (n_samples, n_outputs).
             epochs: Maximum number of passes over the training data.
             batch_size: Number of samples per minibatch, or None for full-batch.
-            validation_data: Optional pair (X_val, y_val), shaped like ``X`` and ``y``.
+            validation_data: Optional (X_val, y_val) shaped like ``X`` and ``y``, or
+                (X_val, y_val, sample_weight_val).
             patience: Number of epochs without improvement in the validation cost before
                 stopping early, or None to always train for ``epochs`` epochs. Requires
                 ``validation_data``.
+            sample_weight: Optional non-negative weight per training sample, shape
+                (n_samples,), e.g. class weights against imbalance. See ``losses``.
 
         Returns:
-            The cost on the full training data after each epoch.
+            The training cost of each epoch, the running mean over its minibatches.
 
         Raises:
             ValueError: If ``X`` and ``y``, or ``X_val`` and ``y_val``, have different
-                numbers of samples, if ``epochs``, ``batch_size`` or ``patience`` is not
-                positive, or if ``patience`` is given without ``validation_data``.
+                numbers of samples, if a sample weight array has the wrong shape, if
+                ``epochs``, ``batch_size`` or ``patience`` is not positive, or if
+                ``patience`` is given without ``validation_data``.
 
         LLM-assisted
         ------------
         Tool: Claude (claude-opus-5-5, Claude Code CLI, November 2026)
         Role: Completed the author's draft of the learning rate schedules and early
-            stopping (snippet).
+            stopping (snippet). Added the sample weights and the running-mean training
+            cost (project 3).
         """
         X = _as_2d(X)
         self._ravel_output = np.ndim(y) == 1
@@ -230,13 +283,19 @@ class FFNN:
             raise ValueError(
                 f"X and y must have the same number of samples, got {n_samples} and {y.shape[0]}."
             )
+        weights = _as_weights(sample_weight, n_samples, "sample_weight")
         if validation_data is not None:
-            X_val, y_val = (_as_2d(array) for array in validation_data)
+            X_val, y_val = _as_2d(validation_data[0]), _as_2d(validation_data[1])
             if y_val.shape[0] != X_val.shape[0]:
                 raise ValueError(
                     "X_val and y_val must have the same number of samples, "
                     f"got {X_val.shape[0]} and {y_val.shape[0]}."
                 )
+            weights_val = _as_weights(
+                validation_data[2] if len(validation_data) == 3 else None,
+                X_val.shape[0],
+                "sample_weight_val",
+            )
         if epochs <= 0:
             raise ValueError(f"epochs must be positive, got {epochs}.")
         if batch_size is None:
@@ -266,17 +325,21 @@ class FFNN:
 
         for epoch in range(1, epochs + 1):
             indices = rng.permutation(n_samples)
+            epoch_cost = 0.0
             for start in range(0, n_samples, batch_size):
                 batch = indices[start : start + batch_size]
+                batch_weights = None if weights is None else weights[batch]
                 output = self._forward(X[batch])
-                self._backward(y[batch], output)
+                batch_cost = self.loss(y[batch], output, batch_weights) + self._penalty()
+                epoch_cost += float(batch_cost) * len(batch)
+                self._backward(y[batch], output, batch_weights)
                 self._update(schedule(step))
                 step += 1
 
-            history.append(float(self.cost(X, y)))
+            history.append(epoch_cost / n_samples)
             if validation_data is None:
                 continue
-            self.validation_history.append(float(self.cost(X_val, y_val)))
+            self.validation_history.append(float(self.cost(X_val, y_val, weights_val)))
 
             if patience is None:
                 continue

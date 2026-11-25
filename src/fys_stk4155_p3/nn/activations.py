@@ -51,6 +51,24 @@ def sigmoid_derivative(z: NDArray[np.float64]) -> NDArray[np.float64]:
     return s * (1 - s)
 
 
+def softmax(z: NDArray[np.float64]) -> NDArray[np.float64]:
+    """Row-wise softmax, turning logits into class probabilities.
+
+    Shifted by the row maximum so that exp does not overflow; the shift cancels in the
+    ratio. Only used to turn logits into probabilities: in training, the softmax is part
+    of the categorical cross entropy.
+
+    Args:
+        z: Logits, shape (n_samples, n_classes).
+
+    Returns:
+        Probabilities, same shape as ``z``; each row sums to 1.
+    """
+    z = np.asarray(z, dtype=np.float64)
+    exp = np.exp(z - np.max(z, axis=1, keepdims=True))
+    return exp / np.sum(exp, axis=1, keepdims=True)
+
+
 def relu(z: NDArray[np.float64]) -> NDArray[np.float64]:
     """Rectified linear unit (ReLU) function, ReLU(z) = max(0, z).
 
